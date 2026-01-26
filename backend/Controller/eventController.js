@@ -105,7 +105,6 @@ const uploadQuestions = async (req, res) => {
             questionText: row.Question,
             options: [row.Opt1, row.Opt2, row.Opt3, row.Opt4],
             correctAnswer: row.Answer,
-            year: row.Year,
             dept: row.Dept,
             category: row.Category,
             eventId: eventId // Linked via URL ID

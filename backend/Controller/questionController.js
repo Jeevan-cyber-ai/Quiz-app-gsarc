@@ -25,30 +25,29 @@ const getGeneralAptiQuestions=async(req,res)=>{
 
 
 }
+
 const getTechnicalAptiQuestions=async(req,res)=>{
      try {
     const userId = req.user.id;
     console.log("User ID from token:", userId);
 
-    const user = await User.findById(userId).select("dept year");   
+    const user = await User.findById(userId).select("dept");   
    console.log("User details:", user);
     if (!user) {
         
       return res.status(404).json({ message: "User not found" });
     }
-    const { dept, year } = user;
+    const { dept } = user;
     const QUESTION_COUNT = 20;
-   if (!dept || !year) {
+   if (!dept) {
     console.log(req.body.dept);
-    console.log(req.body.year); 
-    return res.status(400).json({ message: "dept and year required" });
+    return res.status(400).json({ message: "dept required" });
   }
     const questions = await Question.aggregate([
       {
         $match: {
           category: "Technical Aptitude",
-          dept: dept,
-          year: Number(year)
+          dept: dept
         }
       },
       { $sample: { size: QUESTION_COUNT } },
@@ -91,55 +90,92 @@ const calculateScore = async (answers, expectedCategory) => {
 const submitGeneral = async (req, res) => {
     try {
         const { answers, isProxy } = req.body;
-        // Pass "General Aptitude" as the expected category
-        const score = await calculateScore(answers, "General Aptitude");
-        
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        // Update individual mark
+        const score = await calculateScore(answers, "General Aptitude");
+        
         user.marks_general = score;
-        // Correct total: Current Tech Marks + New General Marks
         user.marks = (user.marks_technical || 0) + score;
-        // Total attended: whatever they submitted now + whatever they attended in tech before
         user.q_attended = answers.length + (user.q_attended_tech || 0);
+        
+        // Use a Set or specific logic to prevent duplicate answer entries
+        user.submitted_answers = answers; // For general, just overwrite to be safe
 
         if (isProxy) user.attempt = 1;
-
         await user.save();
-        res.json({ message: "General submitted", score });
+
+        // ALWAYS return a clear status
+        return res.status(200).json({ success: true, message: "General submitted", score });
     } catch (err) {
-        res.status(500).json({ message: "Server error" });
+        console.error(err);
+        return res.status(500).json({ message: "Server error" });
     }
 };
 
 const submitTechnical = async (req, res) => {
     try {
         const { answers, isProxy } = req.body;
-        // Pass "Technical Aptitude" as the expected category
+        // 1. Calculate the score for the Technical section
         const score = await calculateScore(answers, "Technical Aptitude");
        
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        // Update individual mark
+        // 2. Update individual marks
         user.marks_technical = score;
-        // Correct total: Current General Marks + New Technical Marks
+        
+        // 3. Update total marks (General + Technical)
         user.marks = (user.marks_general || 0) + score;
-        // Aggregate total questions attended
+        
+        // 4. Update total questions attended (Cumulative)
         user.q_attended = (user.q_attended || 0) + answers.length;
         
+        // 5. STORE ANSWERS FOR REVIEW:
+        // We spread existing answers (from General) and add these new Technical ones
+        user.submitted_answers = [...(user.submitted_answers || []), ...answers];
+
+        // 6. Mark the attempt as complete
         user.attempt = 1; 
 
         await user.save();
         res.json({ message: "Technical submitted", score });
     } catch (err) {
+        console.error("Technical Submission Error:", err);
         res.status(500).json({ message: "Server error" });
     }
 };
 const getFinalResults = async (req, res) => {
-    const user = await User.findById(req.user.id).select("marks marks_general marks_technical q_attended");
-    res.json(user);
+    try {
+        const userId = req.user.id;
+        const user = await User.findById(userId).select("marks marks_general marks_technical q_attended submitted_answers");
+
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        // Fetch the questions to get the correct answers
+        const questionIds = user.submitted_answers.map(ans => ans.qId);
+        const questions = await Question.find({ _id: { $in: questionIds } });
+
+        // Map the answers for the review section
+        const review = user.submitted_answers.map(ans => {
+            const question = questions.find(q => q._id.toString() === ans.qId.toString());
+            return {
+                questionText: question ? question.questionText : "Question no longer available",
+                correctAnswer: question ? question.correctAnswer : "N/A",
+                selectedAnswer: ans.selected
+            };
+        });
+
+        res.json({
+            marks: user.marks,
+            marks_general: user.marks_general,
+            marks_technical: user.marks_technical,
+            q_attended: user.q_attended,
+            review: review
+        });
+    } catch (err) {
+        res.status(500).json({ message: "Error fetching final results" });
+    }
 };
 
 module.exports={getGeneralAptiQuestions,getTechnicalAptiQuestions,submitGeneral,submitTechnical,getFinalResults};   

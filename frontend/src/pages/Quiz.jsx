@@ -124,50 +124,60 @@ const timer = setInterval(() => {
         }
     };
 
-    const submitSection = async (isProxy = false) => {
-        if (isSubmitting.current) return;
-        isSubmitting.current = true;
+const submitSection = async (isProxy = false) => {
+    if (isSubmitting.current) return;
+    isSubmitting.current = true;
 
-        try {
-            const endpoint = phaseRef.current === 'general' ? '/student/submit-general' : '/student/submit-technical';
-            
-            // Send current progress
-            await api.post(endpoint, { 
-                answers: answersRef.current, 
-                isProxy: isProxy 
-            });
+    try {
+        const endpoint = phaseRef.current === 'general' ? '/student/submit-general' : '/student/submit-technical';
+        
+        const response = await api.post(endpoint, { 
+            answers: answersRef.current, 
+            isProxy: isProxy 
+        });
 
-            // Wipe local progress so the user cannot try to "resume" a finished quiz
+        if (response.status === 200) {
+            // 1. Clear LocalStorage IMMEDIATELY
             localStorage.removeItem('quiz_answers');
-            localStorage.removeItem('quiz_phase');
             localStorage.removeItem('quiz_index');
             localStorage.removeItem('quiz_expiry');
 
             if (isProxy || phaseRef.current === 'technical') {
-                // replace: true prevents the user from clicking "Back" to enter the quiz again
+                localStorage.removeItem('quiz_phase');
                 navigate('/view-my-result', { replace: true });
                 return;
             }
 
             if (phaseRef.current === 'general') {
                 setIsTransitioning(true);
+                // 2. Prepare for next phase
                 setTimeout(() => {
                     setAnswers([]);
-                    setPhase('technical');
                     setCurrentIndex(0);
+                    setPhase('technical'); // This triggers the useEffect to fetch new questions
                     setIsTransitioning(false);
+                    isSubmitting.current = false; // Reset for next section
                 }, 3000);
             }
-        } catch (err) {
-            console.error("Submission failed", err);
-            // Even if the network fails, if it's a proxy, kick them to results
-            if (isProxy) {
-                localStorage.clear();
-                navigate('/view-my-result', { replace: true });
-            }
-            isSubmitting.current = false;
         }
-    };
+    }catch (err) {
+
+            console.error("Submission failed", err);
+
+            // Even if the network fails, if it's a proxy, kick them to results
+
+            if (isProxy) {
+
+                localStorage.clear();
+
+                navigate('/view-my-result', { replace: true });
+
+            }
+
+            isSubmitting.current = false;
+
+        }
+};
 
     if (isTransitioning) {
         return (

@@ -35,6 +35,12 @@ const userSchema=new mongo.Schema({
    attempt:{
     type:Number,default:0,min:0,max:1
    },
+   submitted_answers: [
+        {
+            qId: { type: mongo.Schema.Types.ObjectId, ref: 'Question' },
+            selected: String
+        }
+    ],
    isApproved: {
         type: Boolean,
         default: false // New users must be approved

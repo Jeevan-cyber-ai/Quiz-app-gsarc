@@ -19,7 +19,8 @@ const questionSchema=new mongo.Schema({
     },
     dept:{
         type:String,
-        required:true
+        required:true,
+        default:"none"
     },
     category:{
         type:String,
