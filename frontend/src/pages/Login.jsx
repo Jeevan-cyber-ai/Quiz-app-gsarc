@@ -12,64 +12,80 @@ function Login() {
         e.preventDefault();
         try {
             const res = await api.post("/auth/login", { email, phone });
-            // Inside your login success handler
             localStorage.setItem("token", res.data.token);
             localStorage.setItem("role", res.data.role);
-            const role = res.data.role;
-            console.log("User role:", role);
-           if (res.data.role === "admin") {
-    window.location.href = "/admin/dashboard";
-} else {
-    window.location.href = "/student/dashboard";
-}
+            
+            if (res.data.role === "admin") {
+                window.location.href = "/admin/dashboard";
+            } else {
+                window.location.href = "/student/dashboard";
+            }
         } catch (err) {
             alert(err.response?.data?.message || "Login failed");
         }
     };
 
     return (
-      
-        <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-white-100 rounded-2xl shadow-2xl p-10 border border-slate-200">
+        /* Main Background - Using a deep neutral black */
+        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
+            
+            {/* Login Card */}
+            <div className="w-full max-w-md bg-[#141414] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-10 border border-zinc-800">
+                
+                {/* Header Section */}
                 <div className="text-center mb-10">
-                    <h2 className="text-4xl font-semibold text-blue-500 mb-4">LOGIN</h2>
-                    <p className="text-slate-500 font-medium">Examination Portal</p>
+                    <div className="inline-block p-3 bg-blue-600/10 rounded-full mb-4">
+                        <span className="text-3xl">🔑</span>
+                    </div>
+                    <h2 className="text-3xl font-bold text-white tracking-tight">Welcome Back</h2>
+                    <p className="text-zinc-500 mt-2 font-medium">Examination Portal Access</p>
                 </div>
-                 
 
                 <form className="space-y-6" onSubmit={handleSubmit}>
+                    {/* Username Input */}
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">USERNAME</label>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2 ml-1">
+                            Email Address
+                        </label>
                         <input 
                             type="email" 
-                            placeholder="Enter email (ex@gmail.com)" 
+                            placeholder="name@company.com" 
                             autoComplete="on"
-                            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                            className="w-full px-4 py-3 bg-[#1c1c1c] rounded-xl border border-zinc-800 text-white placeholder-zinc-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                             value={email} 
                             required 
                             onChange={(e) => setEmail(e.target.value)} 
                         />
                     </div>
 
+                    {/* Password Input */}
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Password</label>
+                        <label className="block text-xs font-black text-zinc-400 uppercase tracking-widest mb-2 ml-1">
+                            Password
+                        </label>
                         <input 
                             type="password" 
-                            placeholder="Enter password  (phone number)" 
-                            className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                            placeholder="••••••••" 
+                            className="w-full px-4 py-3 bg-[#1c1c1c] rounded-xl border border-zinc-800 text-white placeholder-zinc-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                             value={phone} 
                             required 
                             onChange={(e) => setPhone(e.target.value)}
                         />
                     </div>
 
+                    {/* Login Button */}
                     <button 
                         type="submit" 
-                        className="w-full bg-blue-700 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md transition-transform active:scale-95"
+                        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 transition-all hover:shadow-blue-600/20 active:scale-[0.98]"
                     >
-                        Login
+                        Sign In
                     </button>
-                </form> 
+                </form>
+
+                {/* Optional Footer */}
+                <p className="text-center text-zinc-600 text-sm mt-8">
+                    Need help? <a href="#" className="text-blue-500 hover:underline">Contact Administrator</a>
+                </p>
             </div>
         </div>
     );

@@ -7,17 +7,13 @@ import AdminDashboard from './pages/AdminDashboard.jsx';
 import Quiz from './pages/Quiz.jsx';
 import MyResultPage from './pages/MyResultPage.jsx';
 import './index.css';
-// 1. Protected Route Logic
-// 1. Updated Protected Route Logic
+
 const ProtectedRoute = ({ children, allowedRole }) => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
 
-    // If no token, always go to login
     if (!token) return <Navigate to="/" replace />;
 
-    // If the user's role doesn't match the required role for this route, 
-    // send them to their own correct dashboard ONCE.
     if (allowedRole && role !== allowedRole) {
         const dest = role === 'admin' ? "/admin/dashboard" : "/student/dashboard";
         return <Navigate to={dest} replace />;
@@ -25,68 +21,61 @@ const ProtectedRoute = ({ children, allowedRole }) => {
 
     return children;
 };
+
 function App() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-   const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
+
     const handleLogout = () => {
         const confirmLogout = window.confirm("Are you sure you want to logout? Your current progress might be lost.");
 
-    // 2. Only proceed if the user clicks "OK"
-    if (confirmLogout) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("role");
-        
-        // Optional: Clear quiz-specific data as well if you want a full reset
-        localStorage.removeItem("quiz_answers");
-        localStorage.removeItem("quiz_phase");
-        localStorage.removeItem("quiz_index");
-        localStorage.removeItem("quiz_expiry");
-        localStorage.removeItem("quiz_questions_general");
-        localStorage.removeItem("quiz_questions_technical");
-
-        window.location.href = "/"; // Refresh to clear state
+        if (confirmLogout) {
+            localStorage.clear(); // Clears everything: token, role, and quiz progress
+            window.location.href = "/"; 
+        }
     };
-    }
+
     return (
         <Router>
-            <div className="min-h-screen bg-gray-50">
-                {/* --- TAILWIND NAVBAR --- */}
-                <nav className="bg-black shadow-lg text-white">
+            {/* Main Wrapper - Changed to deep black bg-[#0a0a0a] */}
+            <div className="min-h-screen bg-[#0a0a0a] text-zinc-300">
+                
+                {/* --- NAVBAR --- */}
+                <nav className="bg-[#141414] border-b border-zinc-800 shadow-2xl sticky top-0 z-50">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex justify-between h-16 items-center">
+                        <div className="flex justify-between h-20 items-center">
                             
                             {/* Brand Logo */}
                             <div className="flex-shrink-0 flex items-center">
-                                <Link to="/" className="text-3xl font-bold tracking-wider flex items-center gap-2">
-                                    <span className="text-4xl">🎓</span> 
-                                    QUIZ PORTAL
+                                <Link to="/" className="text-2xl font-black tracking-tighter flex items-center gap-3 text-white">
+                                    <span className="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-600/20">🎓</span> 
+                                    <span>QUIZ<span className="text-blue-500">PORTAL</span></span>
                                 </Link>
                             </div>
 
                             {/* Desktop Navigation */}
-                            <div className="hidden md:flex items-center space-x-6">
+                            <div className="hidden md:flex items-center space-x-8">
                                 {!token ? (
                                     <>
-                                        <Link to="/" className="hover:text-blue-200 transition">Login</Link>
-                                        <Link to="/register" className="bg-white text-blue-700 px-4 py-2 rounded-lg font-bold hover:bg-blue-50 transition shadow-md">
-                                            Register
+                                        <Link to="/" className="text-sm font-bold hover:text-white transition">LOGIN</Link>
+                                        <Link to="/register" className="bg-white text-black px-5 py-2.5 rounded-xl font-bold hover:bg-zinc-200 transition shadow-lg">
+                                            GET STARTED
                                         </Link>
                                     </>
                                 ) : (
                                     <>
                                         {role === 'student' && (
-                                            <Link to="/student/dashboard" className="hover:text-blue-200">Instructions</Link>
+                                            <Link to="/student/dashboard" className="text-sm font-bold hover:text-white">INSTRUCTIONS</Link>
                                         )}
-                                        
                                         {role === 'admin' && (
-                                            <Link to="/admin/dashboard" className="hover:text-blue-200">Admin Panel</Link>
+                                            <Link to="/admin/dashboard" className="text-sm font-bold hover:text-white">ADMIN PANEL</Link>
                                         )}
                                         <button 
                                             onClick={handleLogout}
-                                            className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg font-medium transition shadow-md"
+                                            className="bg-zinc-800 hover:bg-red-600/20 hover:text-red-500 border border-zinc-700 hover:border-red-500/50 px-5 py-2 rounded-xl text-sm font-bold transition-all"
                                         >
-                                            Logout
+                                            LOGOUT
                                         </button>
                                     </>
                                 )}
@@ -94,7 +83,7 @@ function App() {
 
                             {/* Mobile Menu Button */}
                             <div className="md:hidden">
-                                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 focus:outline-none">
+                                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 text-zinc-400 hover:text-white">
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         {isMenuOpen ? (
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -109,22 +98,21 @@ function App() {
 
                     {/* Mobile Dropdown Menu */}
                     {isMenuOpen && (
-                        <div className="md:hidden bg-gray-500 px-4 pt-2 pb-4 space-y-1 border-t border-blue-600">
+                        <div className="md:hidden bg-[#141414] border-t border-zinc-800 px-4 py-6 space-y-4 animate-in slide-in-from-top">
                             {!token ? (
                                 <>
-                                    <Link to="/" className="block py-2 hover:bg-slate-100 text-bold text-black rounded px-2" onClick={() => setIsMenuOpen(false)}>Login</Link>
-                                    <Link to="/register" className="block py-2 hover:bg-slate-100 text-bold text-black rounded px-2" onClick={() => setIsMenuOpen(false)}>Register</Link>
+                                    <Link to="/" className="block py-3 text-lg font-bold" onClick={() => setIsMenuOpen(false)}>Login</Link>
+                                    <Link to="/register" className="block py-3 text-lg font-bold text-blue-500" onClick={() => setIsMenuOpen(false)}>Register</Link>
                                 </>
                             ) : (
                                 <>
                                     {role === 'student' && (
-                                            <Link to="/student/dashboard" className="hover:text-z-200">Instructions</Link>
-                                        )}
-                                        
-                                        {role === 'admin' && (
-                                            <Link to="/admin/dashboard" className="hover:text-blue-200">Admin Panel</Link>
-                                        )}
-                                    <button onClick={handleLogout} className="block w-full text-left py-2 text-red-300 hover:bg-blue-700 rounded px-2">Logout</button>
+                                        <Link to="/student/dashboard" className="block py-3 text-lg font-bold" onClick={() => setIsMenuOpen(false)}>Instructions</Link>
+                                    )}
+                                    {role === 'admin' && (
+                                        <Link to="/admin/dashboard" className="block py-3 text-lg font-bold" onClick={() => setIsMenuOpen(false)}>Admin Panel</Link>
+                                    )}
+                                    <button onClick={handleLogout} className="block w-full text-left py-3 text-red-500 font-bold">Logout</button>
                                 </>
                             )}
                         </div>
@@ -132,47 +120,38 @@ function App() {
                 </nav>
 
                 {/* --- MAIN PAGE CONTENT --- */}
-                <div className="container mx-auto mt-8 px-4">
+                <main className="container mx-auto py-10 px-4">
                     <Routes>
-                        {/* Public Routes */}
                         <Route path="/" element={<Login />} />
                         <Route path="/register" element={<Register />} />
+                        
+                        <Route path="/student/dashboard" element={
+                            <ProtectedRoute allowedRole="student">
+                                <Instructions/>
+                            </ProtectedRoute>
+                        } />
 
-                        {/* Protected Student Routes */}
-                        <Route 
-                            path="/student/dashboard" 
-                            element={
-                                <ProtectedRoute allowedRole="student">
-                                  <Instructions/>
-                                </ProtectedRoute>
-                            } 
-                        />
+                        <Route path="/admin/dashboard" element={
+                            <ProtectedRoute allowedRole="admin">
+                                <AdminDashboard/>
+                            </ProtectedRoute>
+                        } />
 
-                        {/* Admin Dashboard */}
-                        <Route 
-                            path="/admin/dashboard" 
-                            element={
-                                <ProtectedRoute allowedRole="admin">
-                                   <AdminDashboard/>
-                                </ProtectedRoute>
-                            } 
-                        />
                         <Route path='/quiz-starts' element={
                             <ProtectedRoute allowedRole="student">
                                 <Quiz/>
                             </ProtectedRoute>
                         }/>
-                         <Route path='/view-my-result' element={
+
+                        <Route path='/view-my-result' element={
                             <ProtectedRoute allowedRole="student">
                                 <MyResultPage/>
                             </ProtectedRoute>
                         }/>
-                        
 
-                        {/* Catch-all: Redirect to Login */}
                         <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
-                </div>
+                </main>
             </div>
         </Router>
     );
