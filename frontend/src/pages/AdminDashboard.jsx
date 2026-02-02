@@ -17,6 +17,53 @@ const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState("events"); // 'events' or 'approvals'
     const [pendingUsers, setPendingUsers] = useState([]);
 
+const handleDownloadMarks = async (eventId, eventTitle) => {
+    if (!eventId) {
+        console.error("Missing ID for event:", eventTitle);
+        return alert("Error: Event ID is missing from the database record.");
+    }
+    try {
+        setLoading(true);
+        // 1. Fetch the marks for this specific event from your backend
+        const res = await api.get(`/admin/events/${eventId}/marksheet`);
+        const data = res.data; // Expected: [{name, dept, phone, marks_technical, marks_general, marks}]
+
+        if (!data || data.length === 0) {
+            return alert("No student data found for this event.");
+        }
+
+        // 2. Define CSV Headers
+        const headers = ["Name", "Department","Technical Marks", "General Marks", "Total Marks"];
+        
+        // 3. Map data to CSV rows
+        const csvRows = [
+            headers.join(','), // First row is headers
+            ...data.map(row => [
+                `"${row.name}"`, 
+                `"${row.dept}"`, 
+                row.marks_technical || 0, 
+                row.marks_general || 0, 
+                row.marks || 0
+            ].join(','))
+        ].join('\n');
+
+        // 4. Create a Blob and trigger download
+        const blob = new Blob([csvRows], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `${eventTitle.replace(/\s+/g, '_')}_Marksheet.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+    } catch (err) {
+        console.error("Download error", err);
+        alert("Failed to generate marksheet");
+    } finally {
+        setLoading(false);
+    }
+};
     // 1. Fetch Events & Pending Users
     const fetchDashboardData = async () => {
         setLoading(true);
@@ -141,6 +188,15 @@ const AdminDashboard = () => {
                                 </div>
                                 <p className="text-slate-400 text-xs mb-4">📍 {event.location}</p>
                                 <p className="text-slate-500 text-sm mb-6 flex-grow">{event.description}</p>
+                                {/* Add this inside your event.map() loop, near the other buttons */}
+<div className="flex gap-2 mt-2">
+    <button 
+        onClick={() => handleDownloadMarks(event._id, event.title)} 
+        className="flex-1 text-[11px] font-bold bg-amber-50 text-amber-700 py-2 rounded-lg hover:bg-amber-100 flex items-center justify-center gap-1"
+    >
+        📊 Download Marksheet
+    </button>
+</div>
                                 <div className="space-y-2 border-t pt-4">
                                     <div className="flex gap-2">
                                         <button onClick={() => setUploadConfig({ show: true, eventId: event._id, type: "students" })} className="flex-1 text-[11px] font-bold bg-emerald-50 text-emerald-700 py-2 rounded-lg hover:bg-emerald-100">↑ Students</button>

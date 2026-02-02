@@ -30,11 +30,24 @@ function App() {
    const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
     const handleLogout = () => {
+        const confirmLogout = window.confirm("Are you sure you want to logout? Your current progress might be lost.");
+
+    // 2. Only proceed if the user clicks "OK"
+    if (confirmLogout) {
         localStorage.removeItem("token");
         localStorage.removeItem("role");
+        
+        // Optional: Clear quiz-specific data as well if you want a full reset
+        localStorage.removeItem("quiz_answers");
+        localStorage.removeItem("quiz_phase");
+        localStorage.removeItem("quiz_index");
+        localStorage.removeItem("quiz_expiry");
+        localStorage.removeItem("quiz_questions_general");
+        localStorage.removeItem("quiz_questions_technical");
+
         window.location.href = "/"; // Refresh to clear state
     };
-
+    }
     return (
         <Router>
             <div className="min-h-screen bg-gray-50">

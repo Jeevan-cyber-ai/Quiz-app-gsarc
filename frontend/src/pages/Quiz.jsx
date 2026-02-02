@@ -59,32 +59,50 @@ const Quiz = () => {
         };
     }, [handleAutoSubmit]);
 
-    // --- FETCH QUESTIONS ---
-    useEffect(() => {
-        const fetchQuestions = async () => {
-            try {
-                setLoading(true);
+    
+        // --- FETCH QUESTIONS WITH PERSISTENCE ---
+useEffect(() => {
+    const fetchQuestions = async () => {
+        try {
+            setLoading(true);
+            setQuestions([]);
+            
+            // Check if we already have this phase's questions saved locally
+            const savedQuestions = localStorage.getItem(`quiz_questions_${phase}`);
+            
+            if (savedQuestions) {
+                setQuestions(JSON.parse(savedQuestions));
+                setLoading(false);
+            } else {
                 const endpoint = phase === 'general' ? '/student/general-apti' : '/student/technical-apti';
                 const res = await api.get(endpoint);
+                
+                // Shuffle options ONCE when they arrive from the server
                 const data = (res.data.questions || []).map(q => ({
-                    ...q, options: shuffleOptions(q.options) 
+                    ...q, 
+                    options: [...q.options].sort(() => Math.random() - 0.5) 
                 }));
+
+                // Save to state and localStorage so refresh doesn't re-randomize
                 setQuestions(data);
+                localStorage.setItem(`quiz_questions_${phase}`, JSON.stringify(data));
+                
                 setLoading(false);
-                if (!localStorage.getItem('quiz_expiry')) {
-                    resetTimer(60);
-                }
-                isSubmitting.current = false;
-            } catch (err) {
-                setLoading(false);
-                // If backend rejects because quiz is done, go to results, NOT login
-                if (err.response?.status === 403 || err.response?.status === 401) {
-                    navigate('/view-my-result', { replace: true });
-                }
             }
-        };
-        fetchQuestions();
-    }, [phase, navigate,resetTimer]);
+
+            if (!localStorage.getItem('quiz_expiry')) {
+                resetTimer(60);
+            }
+            isSubmitting.current = false;
+        } catch (err) {
+            setLoading(false);
+            if (err.response?.status === 403 || err.response?.status === 401) {
+                navigate('/view-my-result', { replace: true });
+            }
+        }
+    };
+    fetchQuestions();
+}, [phase, navigate, resetTimer]);
 
     // --- TIMER ---
     useEffect(() => {
@@ -153,8 +171,11 @@ const submitSection = async (isProxy = false) => {
                 // 2. Prepare for next phase
                 setTimeout(() => {
                     setAnswers([]);
+                    localStorage.removeItem('quiz_questions_general');
+                    setAnswers([]);
                     setCurrentIndex(0);
-                    setPhase('technical'); // This triggers the useEffect to fetch new questions
+                    setPhase('technical');
+                    resetTimer(60); // This triggers the useEffect to fetch new questions
                     setIsTransitioning(false);
                     isSubmitting.current = false; // Reset for next section
                 }, 3000);

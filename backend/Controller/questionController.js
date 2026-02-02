@@ -1,78 +1,72 @@
 const Question=require('../Models/Questions');
 const User=require('../Models/User');
+const getGeneralAptiQuestions = async (req, res) => {
+    try {
+        const QUESTION_COUNT = 20; // Set your desired limit here
 
-const getGeneralAptiQuestions=async(req,res)=>{
-     try {
+        const questions = await Question.aggregate([
+            { 
+                $match: { category: "General Aptitude" } 
+            },
+            { 
+                $sample: { size: QUESTION_COUNT } // This randomizes the selection
+            },
+            {
+                $project: {
+                    questionText: 1,
+                    options: 1
+                    // Exclude correctAnswer so students can't see it in the frontend console
+                }
+            }
+        ]);
+
+        if (questions.length === 0) {
+            return res.status(404).json({ message: "No questions found" });
+        }
+
+        return res.status(200).json({ questions });
+    } catch (err) {
+        console.log("Error fetching questions", err);
+        res.status(500).json({ message: "Error fetching questions" });
+    }
+};const getTechnicalAptiQuestions = async (req, res) => {
+    try {
         const userId = req.user.id;
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
+        const user = await User.findById(userId).select("dept year");
+
+        if (!user || !user.dept || !user.year) {
+            return res.status(400).json({ message: "User profile incomplete (dept/year missing)" });
         }
-   
-   
-    const questions = await Question.find({ category: "General Aptitude" })
-     if (questions.length === 0) {
-      return res.status(404).json({ message: "No questions found" });
-    }
 
-    return res.status(200).json({questions});
-    }
-    catch(err){
-        console.log("Error fetching questions",err);
-        res.status(500).json({message:"Error fetching questions"}); 
+        const QUESTION_COUNT = 20;
 
-    }
+        const questions = await Question.aggregate([
+            {
+                $match: {
+                    category: "Technical Aptitude",
+                    dept: user.dept,
+                    year: Number(user.year) // Ensures the year matches the number type in DB
+                }
+            },
+            { $sample: { size: QUESTION_COUNT } }, // Randomize
+            {
+                $project: {
+                    questionText: 1,
+                    options: 1
+                }
+            }
+        ]);
 
-
-}
-
-const getTechnicalAptiQuestions=async(req,res)=>{
-     try {
-    const userId = req.user.id;
-    console.log("User ID from token:", userId);
-
-    const user = await User.findById(userId).select("dept");   
-   console.log("User details:", user);
-    if (!user) {
-        
-      return res.status(404).json({ message: "User not found" });
-    }
-    const { dept } = user;
-    const QUESTION_COUNT = 20;
-   if (!dept) {
-    console.log(req.body.dept);
-    return res.status(400).json({ message: "dept required" });
-  }
-    const questions = await Question.aggregate([
-      {
-        $match: {
-          category: "Technical Aptitude",
-          dept: dept
+        if (questions.length === 0) {
+            return res.status(404).json({ message: "No technical questions found for your dept/year" });
         }
-      },
-      { $sample: { size: QUESTION_COUNT } },
-      {
-        $project: {
-          questionText: 1,
-          options: 1
-         
-        }
-      }
-    ]);
-     if (questions.length === 0) {
-      return res.status(404).json({ message: "No questions found" });
+
+        return res.status(200).json({ questions });
+    } catch (err) {
+        console.log("Error fetching technical questions", err);
+        res.status(500).json({ message: "Error fetching questions" });
     }
-
-    return res.status(200).json({questions});
-    }
-    catch(err){
-        console.log("Error fetching questions",err);
-        res.status(500).json({message:"Error fetching questions"}); 
-
-    }
-
-
-}
+};
 const calculateScore = async (answers, expectedCategory) => {
     let score = 0;
     for (const item of answers) {

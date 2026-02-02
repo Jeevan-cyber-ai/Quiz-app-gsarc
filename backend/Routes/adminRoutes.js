@@ -12,7 +12,8 @@ adminRoutes.get('/dashboard',authMiddleware,adminOnly,(req,res)=>{
 });
 const upload = multer({ storage: multer.memoryStorage() });
 adminRoutes.post('/create-event',authMiddleware,adminOnly,eventController.createEvent);
-
+// The parameter MUST be :eventId to match req.params.eventId
+adminRoutes.get('/events/:id/marksheet', authMiddleware, adminOnly, eventController.getEventMarksheet);
 adminRoutes.get('/events',authMiddleware,adminOnly,eventController.getEvents);
 
 adminRoutes.post(

@@ -22,6 +22,21 @@ const createEvent = async (req, res) => {
 
 
 }
+// GET /api/admin/events/:eventId/marksheet
+const getEventMarksheet = async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log("Fetching marksheet for event ID:", id);
+        // Logic: Find all users who are associated with this eventId
+        // Assuming your User model has an 'eventId' field
+        const users = await User.find({ eventId: id })
+                                .select("name dept marks_technical marks_general marks");
+        
+        res.status(200).json(users);
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
+};
 
 const getEvents = async (req, res) => {
     try{
@@ -183,4 +198,4 @@ const viewResults = async (req, res) => {
 }
 
 
-module.exports = { createEvent, getEvents, uploadStudents, uploadQuestions,clearStudents,clearQuestions,deleteEvent,viewResults };
+module.exports = { createEvent,getEventMarksheet, getEvents, uploadStudents, uploadQuestions,clearStudents,clearQuestions,deleteEvent,viewResults };
