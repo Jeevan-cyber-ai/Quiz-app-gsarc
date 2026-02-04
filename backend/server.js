@@ -7,8 +7,21 @@ const dotenv=require('dotenv').config();
 const connectDB=require('./config/db');
 app.use(express.json()); 
 
+const allowedOrigins = [
+  "http://localhost:5173", // local frontend
+  "https://quiz-app-gsarc.vercel.app" // deployed frontend
+];
+
 app.use(cors({
-  origin: "*", // or your frontend URL like https://my-quiz-frontend.glitch.me
+  origin: function(origin, callback) {
+    // allow requests with no origin (like Postman)
+    if(!origin) return callback(null, true);
+    if(allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
   methods: ["GET","POST","PUT","DELETE","OPTIONS"],
   allowedHeaders: ["Content-Type","Authorization"]

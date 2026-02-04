@@ -1,9 +1,12 @@
 
 import axios from "axios";
 
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api", // backend base URL
-  withCredentials: true, // if using cookies for auth
+  baseURL: window.location.hostname === "localhost" 
+           ? "http://localhost:5000/api" 
+           : "https://quiz-app-gsarc.onrender.com/api",
+  withCredentials: true,
 });
 
 
