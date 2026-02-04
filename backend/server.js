@@ -8,17 +8,12 @@ const connectDB=require('./config/db');
 app.use(express.json()); 
 
 app.use(cors({
-    origin: "http://localhost:5173", 
-  
-  // 2. Allow cookies/Authorization headers (Required for your Axios setup)
+  origin: "*", // or your frontend URL like https://my-quiz-frontend.glitch.me
   credentials: true,
-  
-  // 3. Allowed methods
-  methods: ["GET", "POST", "PUT", "DELETE","OPTIONS"],
-  
-  // 4. Allowed headers
-  allowedHeaders: ["Content-Type", "Authorization"]
+  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization"]
 }));
+
 app.use(express.urlencoded({ extended: true }));
 connectDB();
 
