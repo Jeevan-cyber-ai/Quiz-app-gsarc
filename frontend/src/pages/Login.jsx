@@ -14,12 +14,12 @@ function Login() {
             const res = await api.post("/auth/login", { email, phone });
             localStorage.setItem("token", res.data.token);
             localStorage.setItem("role", res.data.role);
-            
             if (res.data.role === "admin") {
-                window.location.href = "/admin/dashboard";
-            } else {
-                window.location.href = "/student/dashboard";
-            }
+  navigate("/admin/dashboard");
+} else {
+  navigate("/student/dashboard");
+}
+
         } catch (err) {
             alert(err.response?.data?.message || "Login failed");
         }
