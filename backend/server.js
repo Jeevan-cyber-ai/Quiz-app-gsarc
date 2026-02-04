@@ -26,6 +26,9 @@ app.use("/api/auth", authRoutes);
 app.use('/api/student', studentRoutes);
 app.use('/api/admin', require('./Routes/adminRoutes'));
 
+app.get('/', (req, res) => {
+  res.send('Backend is working!');
+});
 
 
 app.listen(process.env.PORT,()=>{
