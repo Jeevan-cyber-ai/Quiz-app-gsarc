@@ -1,13 +1,11 @@
 
 import axios from "axios";
 
-
 const api = axios.create({
-  baseURL: window.location.hostname === "localhost" 
-           ? "http://localhost:5000/api" 
-           : "https://quiz-app-gsarc.onrender.com/api",
+  baseURL: "https://quiz-app-gsarc.onrender.com/api",
   withCredentials: true,
 });
+
 
 
 api.interceptors.request.use((config) => {
