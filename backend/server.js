@@ -9,20 +9,10 @@ const adminRoutes = require("./Routes/adminRoutes");
 
 const app = express();
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://quiz-app-gsarc.vercel.app"
-];
 
-// ✅ CORS FIRST
+
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    if (!allowedOrigins.includes(origin)) {
-      console.warn("CORS blocked origin:", origin);
-    }
-    return callback(null, true);
-  },
+  origin:"https://quiz-app-gsarc.vercel.app",
   credentials: true,
   methods: ["GET","POST","PUT","DELETE","OPTIONS"],
   allowedHeaders: ["Content-Type","Authorization"]
