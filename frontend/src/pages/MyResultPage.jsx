@@ -56,7 +56,7 @@ const MyResultPage = () => {
                     </div>
                     <div className="space-y-2">
                         <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-white uppercase italic">
-                            Performance <span className="text-blue-600">Dossier</span>
+                            Performance <span className="text-blue-600">Analysis</span>
                         </h1>
                         <p className="text-zinc-500 font-bold tracking-widest text-xs uppercase">Official Certification of Completion</p>
                     </div>

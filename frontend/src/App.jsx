@@ -60,7 +60,7 @@ function App() {
                                     <>
                                         <Link to="/" className="text-sm font-bold hover:text-white transition">LOGIN</Link>
                                         <Link to="/register" className="bg-white text-black px-5 py-2.5 rounded-xl font-bold hover:bg-zinc-200 transition shadow-lg">
-                                            GET STARTED
+                                            REGISTER
                                         </Link>
                                     </>
                                 ) : (
@@ -119,7 +119,7 @@ function App() {
                     )}
                 </nav>
 
-                {/* --- MAIN PAGE CONTENT --- */}
+              
                 <main className="container mx-auto py-10 px-4">
                     <Routes>
                         <Route path="/" element={<Login />} />

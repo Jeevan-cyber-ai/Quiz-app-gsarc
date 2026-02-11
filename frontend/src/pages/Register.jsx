@@ -86,7 +86,7 @@ function Register() {
                             <label className="block text-sm font-bold text-slate-100 mb-1">Department</label>
                             <select 
                                 name="dept"
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-800 text-white"
                                 value={formData.dept}
                                 onChange={handleChange}
                                 required
@@ -110,7 +110,7 @@ function Register() {
                             <label className="block text-sm font-bold text-slate-100 mb-1">Year</label>
                             <select 
                                 name="year"
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-800 text-white"
                                 value={formData.year}
                                 onChange={handleChange}
                                 required
