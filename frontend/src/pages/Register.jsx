@@ -22,7 +22,10 @@ function Register() {
         try {
             const res = await api.post("/auth/register", formData);
             alert(res.data.message);
-            navigate("/"); // Redirect to login after success
+            setFormData({ name: "", email: "", phone: "", dept: "", year: "" }); // Reset form
+            setTimeout(() => {
+                navigate("/"); // Redirect to login after success
+            }, 500); // Small delay to ensure alert is visible
         } catch (err) {
             alert(err.response?.data?.message || "Registration failed");
         }
