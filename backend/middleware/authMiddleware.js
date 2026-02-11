@@ -6,7 +6,7 @@ const authMiddleware=async(req,res,next)=>{
     // --- PROXY DETECTION ---
     const isProxy = req.headers['via'] || req.headers['proxy-connection'] || req.headers['x-forwarded-proto'];
     if (isProxy) {
-        logger.warn({
+        console.warn({
             event: "PROXY_DETECTED",
             ip: userIp,
             path: req.originalUrl,
@@ -19,7 +19,7 @@ const authMiddleware=async(req,res,next)=>{
     const token=req.headers.authorization?.split(" ")[1];
 
     if(!token){
-        logger.info({ event: "UNAUTHORIZED_ACCESS", ip: userIp, path: req.originalUrl });
+        console.info({ event: "UNAUTHORIZED_ACCESS", ip: userIp, path: req.originalUrl });
         return res.status(401).json({message:"No token provided"});
     }
 
@@ -31,7 +31,7 @@ const authMiddleware=async(req,res,next)=>{
     }
     catch(err){
         
-        logger.error({ event: "INVALID_TOKEN_ATTEMPT", ip: userIp, error: err.message });
+        console.error({ event: "INVALID_TOKEN_ATTEMPT", ip: userIp, error: err.message });
         return res.status(401).json({message:"Invalid token"});
     }
 
