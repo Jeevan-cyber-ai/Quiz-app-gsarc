@@ -11,12 +11,7 @@ const app = express();
 
 
 
-app.use(cors({
-  origin:"https://quiz-app-gsarc.vercel.app",
-  credentials: true,
-  methods: ["GET","POST","PUT","DELETE","OPTIONS"],
-  allowedHeaders: ["Content-Type","Authorization"]
-}));
+app.use(cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
