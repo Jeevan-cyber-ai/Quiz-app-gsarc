@@ -21,18 +21,22 @@ function Register() {
         e.preventDefault();
         try {
             const res = await api.post("/auth/register", formData);
-            alert(res.data.message);
-            setFormData({ name: "", email: "", phone: "", dept: "", year: "" }); // Reset form
-            setTimeout(() => {
-                navigate("/"); // Redirect to login after success
-            }, 500); // Small delay to ensure alert is visible
+            console.log("Registration response:", res);
+            if (res.data && res.data.message) {
+                alert(res.data.message);
+                setFormData({ name: "", email: "", phone: "", dept: "", year: "" }); // Reset form
+                setTimeout(() => {
+                    navigate("/"); // Redirect to login after success
+                }, 1000); // Delay to ensure alert is visible
+            }
         } catch (err) {
+            console.error("Registration error:", err);
             alert(err.response?.data?.message || "Registration failed");
         }
     };
 
     return (
-        <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
+        <div className="min-h-screen bg-black flex items-center justify-center p-6">
             <div className="w-full max-w-lg bg-black rounded-2xl shadow-xl p-8 border border-slate-200">
                 <div className="text-center mb-10">
                     <h1 className="text-3xl font-semibold text-blue-700">CREATE ACCOUNT</h1>
