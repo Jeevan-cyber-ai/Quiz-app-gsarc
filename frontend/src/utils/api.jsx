@@ -2,7 +2,7 @@
 import axios from "axios";
 
 // Use Vite's environment variables - import.meta.env instead of process.env
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const baseURL = 'https://quiz-app-gsarc.onrender.com' || 'http://localhost:8000/api';
 
 const api = axios.create({
   baseURL: baseURL,
