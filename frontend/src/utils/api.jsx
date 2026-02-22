@@ -1,11 +1,11 @@
 
 import axios from "axios";
 
-// Use Vite's environment variables - import.meta.env instead of process.env
-const baseURL = 'https://quiz-app-gsarc.onrender.com' || 'http://localhost:8000/api';
+const envUrl = import.meta.env?.VITE_API_URL;
+const baseURL = envUrl || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8000/api' : 'https://quiz-app-gsarc.onrender.com/api');
 
 const api = axios.create({
-  baseURL: baseURL,
+  baseURL,
   withCredentials: true,
 });
 
