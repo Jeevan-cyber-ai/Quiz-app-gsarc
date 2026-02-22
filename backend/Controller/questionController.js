@@ -3,7 +3,10 @@ const User=require('../Models/User');
 const getGeneralAptiQuestions = async (req, res) => {
     try {
         const QUESTION_COUNT = 20; // Set your desired limit here
-
+      const user = await User.findById(req.user.id);
+if (user.isDisqualified || user.attempt === 1) {
+    return res.status(403).json({ message: "You are no longer allowed to access this quiz." });
+}
         const questions = await Question.aggregate([
             { 
                 $match: { category: "General Aptitude" } 
@@ -33,7 +36,9 @@ const getGeneralAptiQuestions = async (req, res) => {
     try {
         const userId = req.user.id;
         const user = await User.findById(userId).select("dept year");
-
+if (user.isDisqualified || user.attempt === 1) {
+    return res.status(403).json({ message: "You are no longer allowed to access this quiz." });
+}
         if (!user || !user.dept || !user.year) {
             return res.status(400).json({ message: "User profile incomplete (dept/year missing)" });
         }
@@ -171,5 +176,38 @@ const getFinalResults = async (req, res) => {
         res.status(500).json({ message: "Error fetching final results" });
     }
 };
+// Controller/questionController.js
+const addWarning = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: "User not found" });
 
-module.exports={getGeneralAptiQuestions,getTechnicalAptiQuestions,submitGeneral,submitTechnical,getFinalResults};   
+        user.warningCount += 1;
+
+        if (user.warningCount >= 2) {
+            user.isDisqualified = true;
+            user.attempt = 1; // Mark attempt as finished
+            await user.save();
+            return res.status(200).json({ 
+                warningCount: user.warningCount, 
+                action: "terminate",
+                message: "Disqualified due to multiple security violations." 
+            });
+        }
+
+        await user.save();
+        return res.status(200).json({ 
+            warningCount: user.warningCount, 
+            action: "continue",
+            message: "Warning issued." 
+        });
+    } catch (err) {
+        console.error("Warning Error:", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+// Don't forget to add addWarning to your module.exports at the bottom
+
+
+module.exports={addWarning,getGeneralAptiQuestions,getTechnicalAptiQuestions,submitGeneral,submitTechnical,getFinalResults};   

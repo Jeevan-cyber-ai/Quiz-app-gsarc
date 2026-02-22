@@ -3,7 +3,7 @@ import api from "../utils/api.jsx";
 import { useNavigate } from "react-router-dom";
 import '../index.css';
 
-function Login() {
+function Login({ setAuth }) {
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
     const navigate = useNavigate();
@@ -14,6 +14,10 @@ function Login() {
             const res = await api.post("/auth/login", { email, phone });
             localStorage.setItem("token", res.data.token);
             localStorage.setItem("role", res.data.role);
+            setAuth({
+                token: res.data.token,
+                role: res.data.role
+            });
             if (res.data.role === "admin") {
   navigate("/admin/dashboard");
 } else {
@@ -84,7 +88,17 @@ function Login() {
 
                 {/* Optional Footer */}
                 <p className="text-center text-zinc-600 text-sm mt-8">
-                    Need help? <a href="#" className="text-blue-500 hover:underline">Contact Administrator</a>
+                    Need help? <a href="tel:7094011675" className="text-blue-500 hover:underline">Call Administrator</a>
+                </p>
+                {/* Registration Prompt */}
+                <p className="text-center text-zinc-600 text-sm mt-4">
+                    Not yet registered?{' '}
+                    <button
+                        onClick={() => navigate('/register')}
+                        className="text-blue-500 hover:underline font-bold"
+                    >
+                        Create an account
+                    </button>
                 </p>
             </div>
         </div>

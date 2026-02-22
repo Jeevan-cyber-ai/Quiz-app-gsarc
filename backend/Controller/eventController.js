@@ -22,6 +22,7 @@ const createEvent = async (req, res) => {
 
 
 }
+
 // GET /api/admin/events/:eventId/marksheet
 const getEventMarksheet = async (req, res) => {
     try {
@@ -46,9 +47,7 @@ const getEvents = async (req, res) => {
             query.title = { $regex: search, $options: 'i' };
         }
         const eventList = await events.find(query).sort({ date: -1 }); 
-        if(eventList.length===0){
-            return res.status(404).json({ message: "No events found" });
-        }      
+        // always return list, even if empty
         return res.status(200).json({ events: eventList });
     }
 
@@ -165,7 +164,7 @@ const deleteEvent = async (req, res) => {
 
     try{
         const { id } = req.params;
-        logger.warn({
+        console.log({
             event: "ADMIN_DELETE_EVENT",
             adminId: req.user.id,
             eventId: id,
@@ -178,7 +177,7 @@ const deleteEvent = async (req, res) => {
 
     }
     catch(err){
-        logger.error({ event: "EVENT_DELETE_FAILED", error: err.message });
+        console.error({ event: "EVENT_DELETE_FAILED", error: err.message });
         console.log("Error deleting event", err);
         res.status(500).json({ message: "Error deleting event" });   
     }
@@ -196,6 +195,47 @@ const viewResults = async (req, res) => {
         res.status(500).json({ message: "Error viewing results" });   
     }       
 }
+ 
+const updateStudent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // remove any attempt to change protected fields
+        const updateData = { ...req.body };
+        delete updateData._id;
+        delete updateData.eventId;
+        const updatedUser = await User.findByIdAndUpdate(id, updateData, { new: true });
+        res.status(200).json(updatedUser);
+    } catch (err) {
+        res.status(500).json({ message: "Update failed" });
+    }
+};
 
-
-module.exports = { createEvent,getEventMarksheet, getEvents, uploadStudents, uploadQuestions,clearStudents,clearQuestions,deleteEvent,viewResults };
+const resetAttempt = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await User.findByIdAndUpdate(id, { 
+            attempt: 0, 
+            isDisqualified: false, 
+            warningCount: 0,
+            marks: 0,
+            marks_general: 0,
+            marks_technical: 0,
+            submitted_answers: [] 
+        });
+        res.status(200).json({ message: "Student reset successfully" });
+    } catch (err) {
+        res.status(500).json({ message: "Reset failed" });
+    }
+};
+const updateEvent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updateData = { ...req.body };
+        delete updateData._id;
+        const updatedEvent = await events.findByIdAndUpdate(id, updateData, { new: true });
+        res.status(200).json({ message: "Event updated", updatedEvent });
+    } catch (err) {
+        res.status(500).json({ message: "Event update failed" });
+    }
+};
+module.exports = { createEvent,getEventMarksheet, getEvents, uploadStudents, uploadQuestions,clearStudents,clearQuestions,deleteEvent,viewResults, updateStudent, resetAttempt, updateEvent };

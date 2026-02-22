@@ -3,11 +3,9 @@ import api from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 
 const Quiz = () => {
-    // 1. Persistence Initialization
     const [phase, setPhase] = useState(() => localStorage.getItem('quiz_phase') || 'general'); 
     const [currentIndex, setCurrentIndex] = useState(() => parseInt(localStorage.getItem('quiz_index')) || 0);
     const [answers, setAnswers] = useState(() => JSON.parse(localStorage.getItem('quiz_answers')) || []);
-    
     const [questions, setQuestions] = useState([]);
     const [timeLeft, setTimeLeft] = useState(() => {
         const savedExpiry = localStorage.getItem('quiz_expiry');
@@ -18,12 +16,6 @@ const Quiz = () => {
         return 60;
     });
 
-    const resetTimer = useCallback((seconds = 60) => {
-        const expiryTime = Date.now() + seconds * 1000;
-        localStorage.setItem('quiz_expiry', expiryTime.toString());
-        setTimeLeft(seconds);
-    }, []);
-
     const [loading, setLoading] = useState(true);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const navigate = useNavigate();
@@ -31,8 +23,16 @@ const Quiz = () => {
     const answersRef = useRef(answers);
     const phaseRef = useRef(phase);
     const isSubmitting = useRef(false);
+    
+    // --- FLAG TO PREVENT ALERT LOOPS ---
+    const isAlertActive = useRef(false);
 
-    // 2. State Persistence
+    const resetTimer = useCallback((seconds = 60) => {
+        const expiryTime = Date.now() + seconds * 1000;
+        localStorage.setItem('quiz_expiry', expiryTime.toString());
+        setTimeLeft(seconds);
+    }, []);
+
     useEffect(() => {
         answersRef.current = answers;
         phaseRef.current = phase;
@@ -41,23 +41,79 @@ const Quiz = () => {
         localStorage.setItem('quiz_index', currentIndex.toString());
     }, [answers, phase, currentIndex]);
 
-    // --- SECURITY LOGIC ---
-    const handleAutoSubmit = useCallback(async () => {
-        if (isSubmitting.current || isTransitioning) return;
-        console.warn("Security violation: Tab switched or blurred.");
-        await submitSection(true); 
-    }, [isTransitioning]);
+    // --- UPDATED VIOLATION LOGIC ---
+    const handleViolation = useCallback(async (reason) => {
+        // If an alert is already open, or we are transitioning/submitting, IGNORE
+        if (isSubmitting.current || isTransitioning || isAlertActive.current) return;
+        
+        isAlertActive.current = true; // Lock security listeners
+        console.warn(`Security violation: ${reason}`);
+
+        try {
+            const res = await api.post('/student/add-warning');
+            const { warningCount, action } = res.data;
+
+            if (action === "terminate") {
+                alert("🛑 FINAL WARNING: Maximum violations reached. Your quiz is being submitted automatically.");
+                // No need to set isAlertActive to false here as we are leaving the page
+                await submitSection(true); 
+            } else if (warningCount === 1) {
+                alert("⚠️ WARNING 1: Switching tabs, leaving the window, or right-clicking is forbidden. One more violation will result in disqualification.");
+                
+                // Release the lock after a small delay to let the window refocus
+                setTimeout(() => {
+                    isAlertActive.current = false;
+                }, 500);
+            } else {
+                isAlertActive.current = false;
+            }
+        } catch (err) {
+            isAlertActive.current = false;
+            if (err.response?.status === 403) {
+                navigate('/view-my-result', { replace: true });
+            }
+        }
+    }, [isTransitioning, navigate]);
 
     useEffect(() => {
-        const handleVisibility = () => { if (document.hidden) handleAutoSubmit(); };
-        const handleBlur = () => { handleAutoSubmit(); };
+        const handleVisibility = () => { 
+            if (document.hidden && !isAlertActive.current) handleViolation("Tab Switched"); 
+        };
+        const handleBlur = () => { 
+            if (!isAlertActive.current) handleViolation("Window Blurred"); 
+        };
+        const handleMouseLeave = () => { 
+            if (!isAlertActive.current) handleViolation("Cursor left window"); 
+        };
+        const handleContextMenu = (e) => {
+            e.preventDefault();
+            if (!isAlertActive.current) handleViolation("Right Click Attempted");
+        };
+        const handleKeydown = (e) => {
+            if (
+                e.keyCode === 123 || 
+                (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || 
+                (e.ctrlKey && e.keyCode === 85)
+            ) {
+                e.preventDefault();
+                if (!isAlertActive.current) handleViolation("Inspect Element Shortcut");
+            }
+        };
+
         window.addEventListener('visibilitychange', handleVisibility);
         window.addEventListener('blur', handleBlur);
+        document.addEventListener('mouseleave', handleMouseLeave);
+        document.addEventListener('contextmenu', handleContextMenu);
+        document.addEventListener('keydown', handleKeydown);
+
         return () => {
             window.removeEventListener('visibilitychange', handleVisibility);
             window.removeEventListener('blur', handleBlur);
+            document.removeEventListener('mouseleave', handleMouseLeave);
+            document.removeEventListener('contextmenu', handleContextMenu);
+            document.removeEventListener('keydown', handleKeydown);
         };
-    }, [handleAutoSubmit]);
+    }, [handleViolation]);
 
     // --- FETCH QUESTIONS ---
     useEffect(() => {
@@ -73,10 +129,13 @@ const Quiz = () => {
                 } else {
                     const endpoint = phase === 'general' ? '/student/general-apti' : '/student/technical-apti';
                     const res = await api.get(endpoint);
-                    const data = (res.data.questions || []).map(q => ({
+                    // server already returns a random sample ($sample in aggregation)
+                    // but we can also shuffle the order again for extra unpredictability
+                    let data = (res.data.questions || []).map(q => ({
                         ...q, 
                         options: [...q.options].sort(() => Math.random() - 0.5) 
                     }));
+                    data = data.sort(() => Math.random() - 0.5);
                     setQuestions(data);
                     localStorage.setItem(`quiz_questions_${phase}`, JSON.stringify(data));
                     setLoading(false);
@@ -114,6 +173,7 @@ const Quiz = () => {
     }, [timeLeft, loading, questions, isTransitioning]);
 
     const handleAnswerSelect = (qId, selected) => {
+        if (isSubmitting.current) return; 
         setAnswers(prev => {
             const otherAnswers = prev.filter(a => a.qId !== qId);
             return [...otherAnswers, { qId, selected }];
@@ -147,6 +207,8 @@ const Quiz = () => {
 
                 if (isProxy || phaseRef.current === 'technical') {
                     localStorage.removeItem('quiz_phase');
+                    localStorage.removeItem('quiz_questions_general');
+                    localStorage.removeItem('quiz_questions_technical');
                     navigate('/view-my-result', { replace: true });
                     return;
                 }
@@ -173,7 +235,6 @@ const Quiz = () => {
         }
     };
 
-    // Transition State UI
     if (isTransitioning) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
@@ -198,8 +259,12 @@ const Quiz = () => {
     const progressPercentage = ((currentIndex + 1) / questions.length) * 100;
 
     return (
-        <div className="max-w-4xl mx-auto p-4 select-none animate-in fade-in duration-700">
-            {/* PROGRESS BAR */}
+        <div 
+            className="max-w-4xl mx-auto p-4 select-none animate-in fade-in duration-700"
+            onCopy={(e) => e.preventDefault()}
+            onPaste={(e) => e.preventDefault()}
+            onCut={(e) => e.preventDefault()}
+        >
             <div className="w-full bg-zinc-900 h-1.5 rounded-full mb-8 overflow-hidden border border-zinc-800">
                 <div 
                     className="bg-blue-600 h-full transition-all duration-500 ease-out shadow-[0_0_15px_rgba(37,99,235,0.5)]"
@@ -208,7 +273,6 @@ const Quiz = () => {
             </div>
 
             <div className="bg-[#141414] shadow-2xl rounded-[2.5rem] p-8 md:p-12 border border-zinc-800 relative overflow-hidden">
-                {/* TIMER GLOW BACKGROUND */}
                 {timeLeft <= 10 && (
                     <div className="absolute top-0 left-0 w-full h-1 bg-red-600 animate-pulse shadow-[0_0_20px_#dc2626]"></div>
                 )}
@@ -237,12 +301,10 @@ const Quiz = () => {
                     </div>
                 </div>
 
-                {/* QUESTION TEXT */}
                 <h2 className="text-xl md:text-2xl font-bold text-white mb-10 leading-snug tracking-tight">
                     {questions[currentIndex]?.questionText}
                 </h2>
 
-                {/* OPTIONS GRID */}
                 <div className="grid grid-cols-1 gap-4">
                     {questions[currentIndex]?.options?.map((option, index) => {
                         const isSelected = answers.find(a => a.qId === questions[currentIndex]._id)?.selected === option;
@@ -269,7 +331,6 @@ const Quiz = () => {
                     })}
                 </div>
 
-                {/* ACTION BUTTON */}
                 <div className="mt-12 flex justify-end">
                     <button 
                         onClick={handleNext} 
@@ -281,9 +342,8 @@ const Quiz = () => {
                 </div>
             </div>
 
-            {/* SECURITY WARNING */}
             <p className="mt-6 text-center text-zinc-600 text-[10px] font-black uppercase tracking-[0.2em]">
-                ⚠️ Warning: Do not switch tabs or minimize window. Session is being monitored.
+                ⚠️ Secured: Warnings: 2 Max | Copy-Paste Disabled | Cursor Listening Enabled
             </p>
         </div>
     );

@@ -4,9 +4,9 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require('nodemailer');
 
 exports.register=async(req,res)=>{
-    const {name,email,phone,dept,year}=req.body;
-    if (!name||!email||!phone||!dept||!year) {
-    return res.status(400).json({ message: "All fields are required" });
+    const {name,email,phone,dept,year,eventId}=req.body;
+    if (!name||!email||!phone||!dept||!year||!eventId) {
+    return res.status(400).json({ message: "All fields are required including selected event" });
   }
 
   const hashedPassword=await bcrypt.hash(phone,10);
@@ -17,48 +17,82 @@ exports.register=async(req,res)=>{
         if (existing) {
             return res.status(409).json({ message: "Email already registered" });
         }
+        // verify event exists
+        // easier: require Events model here
+        const Events = require('../Models/Events');
+        const ev = await Events.findById(eventId);
+        if (!ev) {
+            return res.status(400).json({ message: "Selected event does not exist" });
+        }
 
-        const user = await User.create({ name, email, phone: hashedPassword, dept, year, isApproved: false });
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER, // Your email
-                pass: process.env.EMAIL_PASS  // Your App Password
-            },
-            tls: {
-        rejectUnauthorized: false // Fixes the certificate error you had
-    }
-        });
+        const user = await User.create({ name, email, phone: hashedPassword, dept, year, eventId, isApproved: false });
+        
+        // Try to send email, but don't block registration if it fails
+        try {
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: process.env.EMAIL_USER, // Your email
+                    pass: process.env.EMAIL_PASS  // Your App Password or app-specific password
+                },
+                tls: {
+                    rejectUnauthorized: false // may help with certificate issues
+                }
+            });
 
-        // 2. EMAIL CONTENT
-        const mailOptions = {
-            from: `Quiz Registration System <${process.env.EMAIL_USER}>`,
-            to: process.env.ADMIN_EMAIL, // Admin's Email
-            subject: `Action Required: New Registration Request - ${name}`,
-            html: `
-                <h3>New External Registration Request</h3>
-                <p><strong>Name:</strong> ${name}</p>
-                <p><strong>Email:</strong> ${email}</p>
-                <p><strong>Department:</strong> ${dept}</p>
-                <p>Please log in to the Admin Dashboard to approve or reject this user.</p>
-            `
-        };
+            // verify transport config before sending - useful for debugging
+            transporter.verify((err, success) => {
+                if (err) {
+                    console.error('Mail transporter verification failed:', err);
+                } else {
+                    console.log('Mail transporter verified');
+                }
+            });
 
-        // 3. SEND EMAIL
-        await transporter.sendMail(mailOptions);
+            // 2. EMAIL CONTENT
+            const mailOptions = {
+                from: `Quiz Registration System <${process.env.EMAIL_USER}>`,
+                to: process.env.ADMIN_EMAIL, // Admin's Email
+                subject: `Action Required: New Registration Request - ${name}`,
+                html: `
+                    <h3>New External Registration Request</h3>
+                    <p><strong>Name:</strong> ${name}</p>
+                    <p><strong>Email:</strong> ${email}</p>
+                    <p><strong>Department:</strong> ${dept}</p>
+                    <p>Please log in to the Admin Dashboard to approve or reject this user.</p>
+                `
+            };
 
-        res.status(200).json({ 
+            // 3. SEND EMAIL
+            await transporter.sendMail(mailOptions);
+            console.log("Approval email sent successfully to", process.env.ADMIN_EMAIL);
+        } catch (emailErr) {
+            console.error("Email sending failed:", emailErr);
+            // Don't block registration if email fails but warn in response
+            emailError = emailErr.message || String(emailErr);
+        }
+
+        let responseObj = { 
             message: "Registration requested! Please wait for Admin approval before logging in." 
-        });
+        };
+       
+        res.status(200).json(responseObj);
     }
     catch(err){ 
 
-        console.log("Error in user registration",err);
+        console.log("Error in user registration:", err.message);
+        console.log("Full error:", err);
+        
         // Handle Mongo duplicate-key error if it slips through
         if (err && err.code === 11000) {
             return res.status(409).json({ message: "Email already registered" });
         }
-        return res.status(500).json({message:"Error in user registration"});
+        
+        // Return more detailed error info for debugging
+        return res.status(500).json({
+            message: "Error in user registration",
+            error: err.message
+        });
     }           
 
 

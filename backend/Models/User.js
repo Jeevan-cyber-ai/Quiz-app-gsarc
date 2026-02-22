@@ -47,6 +47,14 @@ const userSchema=new mongo.Schema({
     },
     marks_general: { type: Number, default: 0 },
     marks_technical: { type: Number, default: 0 },
+    warningCount: {
+        type: Number,
+        default: 0
+    },
+    isDisqualified: {
+        type: Boolean,
+        default: false
+    },
    eventId: {
     type: mongo.Schema.Types.ObjectId,
     ref: 'Events'}

@@ -10,9 +10,20 @@ const adminRoutes = require("./Routes/adminRoutes");
 const app = express();
 
 const corsOptions = {
-  origin: "https://quiz-app-gsarc.vercel.app",
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      "https://quiz-app-gsarc.vercel.app",
+      "http://localhost:5173"
+    ];
+    
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PUT","PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
@@ -35,7 +46,7 @@ app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

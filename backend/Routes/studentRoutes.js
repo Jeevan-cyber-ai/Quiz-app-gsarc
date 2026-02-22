@@ -12,6 +12,7 @@ studentRoutes.get('/instruction',authMiddleware,studentOnly,(req,res)=>{
 
 studentRoutes.get('/start-quiz',authMiddleware,studentOnly,authController.canEnterQuiz);
 
+studentRoutes.post('/add-warning', authMiddleware, studentOnly, questionController.addWarning);
 studentRoutes.get('/general-apti',authMiddleware,studentOnly,questionController.getGeneralAptiQuestions);
 studentRoutes.get('/technical-apti',authMiddleware,studentOnly,questionController.getTechnicalAptiQuestions);
 
