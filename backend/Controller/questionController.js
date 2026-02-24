@@ -2,23 +2,24 @@ const Question=require('../Models/Questions');
 const User=require('../Models/User');
 const getGeneralAptiQuestions = async (req, res) => {
     try {
-        const QUESTION_COUNT = 20; // Set your desired limit here
+        const QUESTION_COUNT = 20; 
       const user = await User.findById(req.user.id);
 if (user.isDisqualified || user.attempt === 1) {
     return res.status(403).json({ message: "You are no longer allowed to access this quiz." });
 }
+
         const questions = await Question.aggregate([
             { 
                 $match: { category: "General Aptitude" } 
             },
             { 
-                $sample: { size: QUESTION_COUNT } // This randomizes the selection
+                $sample: { size: QUESTION_COUNT } 
             },
             {
                 $project: {
                     questionText: 1,
                     options: 1
-                    // Exclude correctAnswer so students can't see it in the frontend console
+                    
                 }
             }
         ]);

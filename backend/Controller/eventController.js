@@ -59,50 +59,52 @@ const getEvents = async (req, res) => {
 
 const uploadStudents = async (req, res) => {
     try {
-      
         const { id } = req.params; 
 
         if (!req.file) {
-            return res.status(400).json({ message: "No file uploaded. Please upload an Excel file." });
+            return res.status(400).json({ message: "No file uploaded." });
         }
 
-        // 2. Parse the Excel file from the buffer
         const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
         const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-      console.log("Parsed data:", data);
-        const students = data.map(row => ({
-            name: row.Name,       // Header in Excel must be 'Name'
-            email: row.Email,     // Header in Excel must be 'Email'
-            phone: row.Phone.toString(), // Header in Excel must be 'Phone'
-            dept: row.Dept,       // Header in Excel must be 'Dept'
-            year: Number(row.Year), // Header in Excel must be 'Year'
-            eventId: id,          // Attached from the URL
-            role: 'student',      // Default role
-            attempt: 0,           // Initialize attempt count
-            marks: 0,
-            isApproved:true              // Initialize marks
+        // CRITICAL FIX: Use Promise.all to hash all phone numbers in parallel
+        const students = await Promise.all(data.map(async (row) => {
+            const rawPhone = row.Phone.toString();
+            // Hash the phone number exactly like the register function does
+            const hashedPassword = await bcrypt.hash(rawPhone, 10);
+
+            return {
+                name: row.Name,
+                email: row.Email,
+                phone: hashedPassword, // Store the hash, not the plain text
+                dept: row.Dept,
+                year: Number(row.Year),
+                eventId: id,
+                role: 'student',
+                attempt: 0,
+                marks: 0,
+                isApproved: true
+            };
         }));
 
-        
+        // Use ordered: false so if one email is a duplicate, the rest still upload
         await User.insertMany(students, { ordered: false });
 
         return res.status(200).json({ 
-            message: `Successfully uploaded ${students.length} students to event ${id}` 
+            message: `Successfully uploaded ${students.length} students.` 
         });
 
     } catch (err) {
         console.error("Upload Error:", err);
-        
-      
         if (err.code === 11000) {
-            return res.status(400).json({ message: "Some students already exist (Duplicate Email or Phone)" });
+            return res.status(400).json({ message: "Upload finished. Some duplicates were skipped." });
         }
-
         return res.status(500).json({ message: "Internal Server Error during upload" });
     }
 };
+
 
 const uploadQuestions = async (req, res) => {
     try {
