@@ -41,7 +41,7 @@ function Login({ setAuth }) {
                     <div className="inline-block p-3 bg-blue-600/10 rounded-full mb-4">
                         <span className="text-3xl">🔑</span>
                     </div>
-                    <h2 className="text-3xl font-bold text-white tracking-tight">Welcome Back</h2>
+                    <h2 className="text-3xl font-bold text-white tracking-tight">LOGIN PAGE</h2>
                     <p className="text-zinc-500 mt-2 font-medium">Examination Portal Access</p>
                 </div>
 

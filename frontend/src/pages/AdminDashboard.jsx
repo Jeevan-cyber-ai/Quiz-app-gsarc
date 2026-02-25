@@ -111,8 +111,18 @@ const AdminDashboard = () => {
             const res = await api.get(`/admin/events/${eventId}/marksheet`);
             const data = res.data;
             if (!data || data.length === 0) return alert("No student data found.");
-            const headers = ["Name", "Department", "Technical Marks", "General Marks", "Total Marks"];
-            const csvRows = [headers.join(','), ...data.map(row => [`"${row.name}"`,`"${row.dept}"`,row.marks_technical || 0,row.marks_general || 0,row.marks || 0].join(','))].join('\n');
+            const headers = ["Name", "Department", "Year", "Technical Marks", "General Marks", "Total Marks"];
+            const csvRows = [
+                headers.join(','),
+                ...data.map(row => [
+                    `"${row.name}"`,
+                    `"${row.dept}"`,
+                    row.year || '',
+                    row.marks_technical || 0,
+                    row.marks_general || 0,
+                    row.marks || 0
+                ].join(','))
+            ].join('\n');
             const blob = new Blob([csvRows], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Instructions from './pages/Instructions.jsx';
@@ -30,6 +30,25 @@ function App() {
         role: localStorage.getItem("role")
     });
 
+    return (
+        <Router>
+            <AppContent
+                auth={auth}
+                setAuth={setAuth}
+                isMenuOpen={isMenuOpen}
+                setIsMenuOpen={setIsMenuOpen}
+            />
+        </Router>
+    );
+}
+
+function AppContent({ auth, setAuth, isMenuOpen, setIsMenuOpen }) {
+    const location = useLocation();
+    const isInQuiz = location.pathname.startsWith('/quiz');
+
+    // rest of the original render logic follows below, using these props
+
+
     const handleLogout = () => {
         const confirmLogout = window.confirm("Are you sure you want to logout? Your current progress might be lost.");
 
@@ -45,7 +64,6 @@ function App() {
     };
 
     return (
-        <Router>
             <div className="min-h-screen bg-[#0a0a0a] text-zinc-300">
                 
                 {/* --- NAVBAR --- */}
@@ -72,7 +90,7 @@ function App() {
                                     </>
                                 ) : (
                                     <>
-                                        {auth.role === 'student' && (
+                                        {auth.role === 'student' && !isInQuiz && (
                                             <Link to="/student/dashboard" className="text-sm font-bold hover:text-white">INSTRUCTIONS</Link>
                                         )}
                                         {auth.role === 'admin' && (
@@ -113,7 +131,7 @@ function App() {
                                 </>
                             ) : (
                                 <>
-                                    {auth.role === 'student' && (
+                                    {auth.role === 'student' && !isInQuiz && (
                                         <Link to="/student/dashboard" className="block py-3 text-lg font-bold" onClick={() => setIsMenuOpen(false)}>Instructions</Link>
                                     )}
                                     {auth.role === 'admin' && (
@@ -161,7 +179,6 @@ function App() {
                     </Routes>
                 </main>
             </div>
-        </Router>
     );
 }
 

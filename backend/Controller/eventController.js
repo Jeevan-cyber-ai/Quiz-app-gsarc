@@ -2,6 +2,7 @@ const events = require('../Models/Events');
 const xlsx = require('xlsx');
 const Question = require('../Models/Questions');
 const User = require('../Models/User');
+const bcrypt = require("bcryptjs");
 const createEvent = async (req, res) => {
     try{
         const { title, date, time, description, location } = req.body;
@@ -29,9 +30,9 @@ const getEventMarksheet = async (req, res) => {
         const { id } = req.params;
         console.log("Fetching marksheet for event ID:", id);
         // Logic: Find all users who are associated with this eventId
-        // Assuming your User model has an 'eventId' field
+        // Including their year of study for reporting
         const users = await User.find({ eventId: id })
-                                .select("name dept marks_technical marks_general marks");
+                                .select("name dept year marks_technical marks_general marks");
         
         res.status(200).json(users);
     } catch (error) {
