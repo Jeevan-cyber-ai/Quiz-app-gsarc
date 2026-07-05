@@ -1,0 +1,16 @@
+{
+  "name": "my-quiz-root",
+  "version": "1.0.0",
+  "description": "Root configuration for full-stack Quiz App",
+  "scripts": {
+    "install:server": "cd backend && npm install",
+    "install:client": "cd frontend && npm install",
+    "install:all": "npm install && npm run install:server && npm run install:client",
+    "server": "cd backend && npm start",
+    "client": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
